@@ -165,6 +165,8 @@ pub enum Response {
     OverviewState(Overview),
     /// Information about screencasts.
     Casts(Vec<Cast>),
+    /// Screenshot image data, base64-encoded PNG.
+    ScreenshotImage(String),
 }
 
 /// Overview information.
@@ -253,6 +255,18 @@ pub enum Action {
         /// If `None`, the screenshot is saved according to the `screenshot-path` config setting.
         #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set))]
         path: Option<String>,
+
+        /// Return the screenshot via stdout for further use.
+        #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set, default_value_t = false))]
+        stdout: bool,
+
+        /// Copy the screenshot to your clipboard.
+        #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set, default_value_t = true))]
+        clipboard: bool,
+
+        /// Emit a notification that the screenshot was taken.
+        #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set, default_value_t = true))]
+        notify: bool,
     },
     /// Screenshot a window.
     #[cfg_attr(feature = "clap", clap(about = "Screenshot the focused window"))]
@@ -282,6 +296,18 @@ pub enum Action {
         /// If `None`, the screenshot is saved according to the `screenshot-path` config setting.
         #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set))]
         path: Option<String>,
+
+        /// Return the screenshot via stdout for further use.
+        #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set, default_value_t = false))]
+        stdout: bool,
+
+        /// Copy the screenshot to your clipboard.
+        #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set, default_value_t = true))]
+        clipboard: bool,
+
+        /// Emit a notification that the screenshot was taken.
+        #[cfg_attr(feature = "clap", arg(long, action = clap::ArgAction::Set, default_value_t = true))]
+        notify: bool,
     },
     /// Enable or disable the keyboard shortcuts inhibitor (if any) for the focused surface.
     ToggleKeyboardShortcutsInhibit {},

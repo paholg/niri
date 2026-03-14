@@ -381,6 +381,22 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
         Request::Action(action) => {
             validate_action(&action)?;
 
+            let wants_stdout = matches!(
+                &action,
+                Action::ScreenshotScreen { stdout: true, .. }
+                    | Action::ScreenshotWindow { stdout: true, .. }
+            );
+
+            let screenshot_rx = if wants_stdout {
+                let (screenshot_tx, rx) = async_channel::bounded(1);
+                ctx.event_loop.insert_idle(move |state| {
+                    state.niri.screenshot_data_tx = Some(screenshot_tx);
+                });
+                Some(rx)
+            } else {
+                None
+            };
+
             let (tx, rx) = async_channel::bounded(1);
 
             let action = niri_config::Action::from(action);
@@ -396,7 +412,18 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
             // few actions, for instance for DoScreenTransition this wait ensures that the screen
             // contents were sampled into the texture.
             let _ = rx.recv().await;
-            Response::Handled
+
+            if let Some(screenshot_rx) = screenshot_rx {
+                use base64::Engine as _;
+                let data = screenshot_rx
+                    .recv()
+                    .await
+                    .map_err(|_| String::from("error receiving screenshot data"))?;
+                let encoded = base64::engine::general_purpose::STANDARD.encode(&*data);
+                Response::ScreenshotImage(encoded)
+            } else {
+                Response::Handled
+            }
         }
         Request::Output { output, action } => {
             action.validate()?;

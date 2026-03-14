@@ -317,10 +317,17 @@ pub fn handle_msg(mut msg: Msg, json: bool) -> anyhow::Result<()> {
                 println!("No color was picked.");
             }
         }
-        Msg::Action { .. } => {
-            let Response::Handled = response else {
-                bail!("unexpected response: expected Handled, got {response:?}");
-            };
+        Msg::Action { .. } => match response {
+            Response::Handled => {}
+            Response::ScreenshotImage(data) => {
+                use base64::Engine as _;
+                let bytes = base64::engine::general_purpose::STANDARD
+                    .decode(&data)
+                    .context("error decoding screenshot base64 data")?;
+                std::io::Write::write_all(&mut std::io::stdout(), &bytes)
+                    .context("error writing screenshot data to stdout")?;
+            }
+            _ => bail!("unexpected response: expected Handled or ScreenshotImage, got {response:?}"),
         }
         Msg::Output { output, .. } => {
             let Response::OutputConfigChanged(response) = response else {

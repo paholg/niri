@@ -706,9 +706,21 @@ impl State {
                     self.niri.do_screen_transition(renderer, delay_ms);
                 });
             }
-            Action::ScreenshotScreen(write_to_disk, show_pointer, path) => {
+            Action::ScreenshotScreen(
+                write_to_disk,
+                show_pointer,
+                path,
+                stdout,
+                clipboard,
+                notify,
+            ) => {
                 let active = self.niri.layout.active_output().cloned();
                 if let Some(active) = active {
+                    let stdout_tx = if stdout {
+                        self.niri.screenshot_data_tx.take()
+                    } else {
+                        None
+                    };
                     self.backend.with_primary_renderer(|renderer| {
                         if let Err(err) = self.niri.screenshot(
                             renderer,
@@ -716,6 +728,9 @@ impl State {
                             write_to_disk,
                             show_pointer,
                             path,
+                            stdout_tx,
+                            clipboard,
+                            notify,
                         ) {
                             warn!("error taking screenshot: {err:?}");
                         }
@@ -744,9 +759,21 @@ impl State {
                 self.open_screenshot_ui(show_cursor, path);
                 self.niri.cancel_mru();
             }
-            Action::ScreenshotWindow(write_to_disk, show_pointer, path) => {
+            Action::ScreenshotWindow(
+                write_to_disk,
+                show_pointer,
+                path,
+                stdout,
+                clipboard,
+                notify,
+            ) => {
                 let focus = self.niri.layout.focus_with_output();
                 if let Some((mapped, output)) = focus {
+                    let stdout_tx = if stdout {
+                        self.niri.screenshot_data_tx.take()
+                    } else {
+                        None
+                    };
                     self.backend.with_primary_renderer(|renderer| {
                         if let Err(err) = self.niri.screenshot_window(
                             renderer,
@@ -755,6 +782,9 @@ impl State {
                             write_to_disk,
                             show_pointer,
                             path,
+                            stdout_tx,
+                            clipboard,
+                            notify,
                         ) {
                             warn!("error taking screenshot: {err:?}");
                         }
@@ -766,11 +796,19 @@ impl State {
                 write_to_disk,
                 show_pointer,
                 path,
+                stdout,
+                clipboard,
+                notify,
             } => {
                 let mut windows = self.niri.layout.windows();
                 let window = windows.find(|(_, m)| m.id().get() == id);
                 if let Some((Some(monitor), mapped)) = window {
                     let output = monitor.output();
+                    let stdout_tx = if stdout {
+                        self.niri.screenshot_data_tx.take()
+                    } else {
+                        None
+                    };
                     self.backend.with_primary_renderer(|renderer| {
                         if let Err(err) = self.niri.screenshot_window(
                             renderer,
@@ -779,6 +817,9 @@ impl State {
                             write_to_disk,
                             show_pointer,
                             path,
+                            stdout_tx,
+                            clipboard,
+                            notify,
                         ) {
                             warn!("error taking screenshot: {err:?}");
                         }
